@@ -1,4 +1,5 @@
 #include "xwallpaper.h"
+#include <GL/glx.h>
 #include <X11/Xlib.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -68,6 +69,28 @@ extern "C" {
 
     void wallpaper_free(Wallpaper* wallpaper) {
         free(wallpaper);
+    }
+
+    Window wallpaper_get_window(Wallpaper* wallpaper) {
+        return wallpaper->root;
+    }
+
+    int wallpaper_get_width(Wallpaper* wallpaper) {
+        XWindowAttributes attrs;
+        XGetWindowAttributes(wallpaper->xdpy, wallpaper->root, &attrs);
+
+        return attrs.width;
+    }
+
+    int wallpaper_get_height(Wallpaper* wallpaper) {
+        XWindowAttributes attrs;
+        XGetWindowAttributes(wallpaper->xdpy, wallpaper->root, &attrs);
+
+        return attrs.height;
+    }
+
+    void wallpaper_swap_buffers(Wallpaper* wallpaper) {
+        glXSwapBuffers(wallpaper->xdpy, wallpaper->root);
     }
 
 #ifdef __cplusplus
