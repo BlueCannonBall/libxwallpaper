@@ -46,7 +46,7 @@ extern "C" {
             GLX_BLUE_SIZE,
             1,
             GLX_DEPTH_SIZE,
-            32,
+            24,
             None,
         };
 
