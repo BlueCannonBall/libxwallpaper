@@ -33,7 +33,22 @@ extern "C" {
         typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
         static int visual_attribs[] = {
-            GLX_RENDER_TYPE, GLX_RGBA_BIT, GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, GLX_DOUBLEBUFFER, true, GLX_RED_SIZE, 1, GLX_GREEN_SIZE, 1, GLX_BLUE_SIZE, 1, None};
+            GLX_RENDER_TYPE,
+            GLX_RGBA_BIT,
+            GLX_DRAWABLE_TYPE,
+            GLX_WINDOW_BIT,
+            GLX_DOUBLEBUFFER,
+            true,
+            GLX_RED_SIZE,
+            1,
+            GLX_GREEN_SIZE,
+            1,
+            GLX_BLUE_SIZE,
+            1,
+            GLX_DEPTH_SIZE,
+            32,
+            None,
+        };
 
         int num_fbc = 0;
         GLXFBConfig* fbc = glXChooseFBConfig(wallpaper->xdpy,
