@@ -17,6 +17,7 @@ extern "C" {
     Window wallpaper_get_window(Wallpaper* wallpaper);
     int wallpaper_get_width(Wallpaper* wallpaper);
     int wallpaper_get_height(Wallpaper* wallpaper);
+    int wallpaper_get_depth(Wallpaper* wallpaper);
 
     void wallpaper_swap_buffers(Wallpaper* wallpaper);
 

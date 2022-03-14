@@ -1,5 +1,6 @@
 #include "xwallpaper.h"
 #include <GL/glx.h>
+#include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -10,6 +11,7 @@
 typedef struct Wallpaper {
     Display* xdpy;
     Window root;
+    Pixmap pmap;
     int screen;
 } Wallpaper;
 
@@ -29,6 +31,7 @@ extern "C" {
         }
         wallpaper->root = DefaultRootWindow(wallpaper->xdpy);
         wallpaper->screen = DefaultScreen(wallpaper->xdpy);
+        wallpaper->pmap = XCreatePixmap(wallpaper->xdpy, wallpaper->root, wallpaper_get_width(wallpaper), wallpaper_get_height(wallpaper), wallpaper_get_depth(wallpaper));
 
         typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
@@ -73,12 +76,50 @@ extern "C" {
             GLX_CONTEXT_MAJOR_VERSION_ARB, 3, GLX_CONTEXT_MINOR_VERSION_ARB, 3, None};
         GLXContext ctx = glXCreateContextAttribsARB(wallpaper->xdpy, fbc[0], NULL, true, context_attribs);
 
-        glXMakeCurrent(wallpaper->xdpy, wallpaper->root, ctx);
+        glXMakeCurrent(wallpaper->xdpy, wallpaper->pmap, ctx);
+
+        {
+            Atom atom_root, atom_eroot, type;
+            unsigned char *data_root, *data_eroot;
+            int format;
+            unsigned long length, after;
+
+            atom_root = XInternAtom(wallpaper->xdpy, "_XROOTPMAP_ID", True);
+            atom_eroot = XInternAtom(wallpaper->xdpy, "ESETROOT_PMAP_ID", True);
+
+            /* Doing this to clean up after old background */
+            if (atom_root != None && atom_eroot != None) {
+                XGetWindowProperty(wallpaper->xdpy, wallpaper->root, atom_root, 0L, 1L, False, AnyPropertyType, &type, &format, &length, &after, &data_root);
+
+                if (type == XA_PIXMAP) {
+                    XGetWindowProperty(wallpaper->xdpy, wallpaper->root, atom_eroot, 0L, 1L, False, AnyPropertyType, &type, &format, &length, &after, &data_eroot);
+
+                    if (data_root && data_eroot && type == XA_PIXMAP && *((Pixmap*) data_root) == *((Pixmap*) data_eroot))
+                        XKillClient(wallpaper->xdpy, *((Pixmap*) data_root));
+                }
+            }
+
+            atom_root = XInternAtom(wallpaper->xdpy, "_XROOTPMAP_ID", False);
+            atom_eroot = XInternAtom(wallpaper->xdpy, "ESETROOT_PMAP_ID", False);
+
+            if (atom_root == None || atom_eroot == None)
+                return 0;
+
+            /* Setting new background atoms */
+            XChangeProperty(wallpaper->xdpy, wallpaper->root, atom_root, XA_PIXMAP, 32, PropModeReplace, (unsigned char*) &wallpaper->pmap, 1);
+            XChangeProperty(wallpaper->xdpy, wallpaper->root, atom_eroot, XA_PIXMAP, 32, PropModeReplace, (unsigned char*) &wallpaper->pmap, 1);
+
+            return 1;
+        }
+
+        XSetWindowBackgroundPixmap(wallpaper->xdpy, wallpaper->root, wallpaper->pmap);
+        XClearWindow(wallpaper->xdpy, wallpaper->root);
 
         return 0;
     }
 
     void wallpaper_destroy(Wallpaper* wallpaper) {
+        XFreePixmap(wallpaper->xdpy, wallpaper->pmap);
         XCloseDisplay(wallpaper->xdpy);
     }
 
@@ -104,8 +145,15 @@ extern "C" {
         return attrs.height;
     }
 
+    int wallpaper_get_depth(Wallpaper* wallpaper) {
+        XWindowAttributes attrs;
+        XGetWindowAttributes(wallpaper->xdpy, wallpaper->root, &attrs);
+
+        return attrs.depth;
+    }
+
     void wallpaper_swap_buffers(Wallpaper* wallpaper) {
-        glXSwapBuffers(wallpaper->xdpy, wallpaper->root);
+        glXSwapBuffers(wallpaper->xdpy, wallpaper->pmap);
     }
 
 #ifdef __cplusplus
